@@ -58,4 +58,4 @@ The project follows an **N-tier architecture**:
 ## Sprint Goals
 
 - **Sprint 0**: Repository structure, responsibilities, and planning
-- **Sprint 1+**: Backend API, database models, authentication, uploads, deployment
+- **Sprint 1+**: Backend API, database models, uploads, deployment
