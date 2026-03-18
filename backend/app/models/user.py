@@ -3,6 +3,8 @@ from datetime import datetime
 
 
 class User(db.Model):
+    """Database model for users."""
+
     __tablename__ = "users"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -16,4 +18,9 @@ class User(db.Model):
         lazy=True
     )
 
-
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "username": self.username,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }

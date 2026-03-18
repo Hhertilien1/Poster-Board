@@ -3,6 +3,8 @@ from datetime import datetime
 
 
 class Post(db.Model):
+    """Database model for posts."""
+
     __tablename__ = "posts"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -21,3 +23,13 @@ class Post(db.Model):
         db.Index("idx_created_at", "created_at"),
         db.Index("idx_user_id", "user_id"),
     )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "title": self.title,
+            "content": self.content,
+            "image_url": self.image_url,
+            "user_id": self.user_id,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }

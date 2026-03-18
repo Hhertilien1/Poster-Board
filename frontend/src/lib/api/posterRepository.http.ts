@@ -1,8 +1,11 @@
 import { Poster, PosterPage } from "@/lib/api/types";
 
+// API base URL is read from next environment variable.
+// If empty, it uses relative paths (e.g., `GET /api/posters`).
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL ?? "").replace(/\/$/, "");
 
 function buildUrl(path: string, params?: Record<string, string>) {
+  // Ensure URL handles server-side rendering as well as browser runtime.
   const url = new URL(
     `${API_BASE_URL}${path}`,
     typeof window === "undefined" ? "http://localhost" : window.location.origin
@@ -15,6 +18,7 @@ function buildUrl(path: string, params?: Record<string, string>) {
   }
 
   if (!API_BASE_URL) {
+    // When API base is empty, use path only.
     return `${url.pathname}${url.search}`;
   }
 

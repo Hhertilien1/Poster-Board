@@ -6,6 +6,7 @@ import { posterRepository } from "@/lib/api/posterRepository";
 import { PosterCard } from "@/components/PosterCard";
 import { PosterCardSkeleton } from "@/components/PosterCardSkeleton";
 
+// Poster feed uses page cursor pagination and an IntersectionObserver sentinel for infinite scrolling.
 const PAGE_SIZE = 12;
 
 export function PosterFeed() {
