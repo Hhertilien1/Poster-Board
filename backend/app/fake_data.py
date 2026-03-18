@@ -3,7 +3,8 @@ users = [
     {"id": 1, "username": "Bob"},
     {"id": 2, "username": "alice"},
 ]
-
+#add img_URL and API testing in postman
+#try downloading collection 
 posts = [
     {"id": 1, "title": "Hello World", "content": "My first post", "user_id": 1},
     {"id": 2, "title": "Another Post", "content": "Testing static API", "user_id": 2},
