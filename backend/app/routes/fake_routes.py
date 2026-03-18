@@ -41,6 +41,7 @@ def create_post():
         "id": len(posts) + 1,
         "title": data.get("title"),
         "content": data.get("content"),
+        "image_url": data.get("image_url"),
         "user_id": data.get("user_id")
     }
 

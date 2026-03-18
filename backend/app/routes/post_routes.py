@@ -44,6 +44,7 @@ def get_posts():
             "id": p.id,
             "title": p.title,
             "content": p.content,
+            "image_url": p.image_url,
             "user_id": p.user_id,
             "created_at": p.created_at.isoformat() if p.created_at else None,
         }
