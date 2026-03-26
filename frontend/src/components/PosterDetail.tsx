@@ -15,6 +15,12 @@ export function PosterDetail({ id }: PosterDetailProps) {
     queryFn: () => posterRepository.getPosterById(id),
     staleTime: 5 * 60 * 1000
   });
+  const { data: userData } = useQuery({
+    queryKey: ["user", data?.user_id],
+    queryFn: () => posterRepository.getUserById(data!.user_id),
+    enabled: Boolean(data?.user_id),
+    staleTime: 5 * 60 * 1000
+  });
 
   if (isPending) {
     return <p className="rounded-xl bg-white/80 p-4 text-sm text-ink/70">Loading poster...</p>;
@@ -34,6 +40,10 @@ export function PosterDetail({ id }: PosterDetailProps) {
     );
   }
 
+  const imageUrl = data.image_url ?? "https://picsum.photos/800/1120?grayscale";
+  const isPdfPoster =
+    imageUrl.startsWith("data:application/pdf") || imageUrl.toLowerCase().endsWith(".pdf");
+
   return (
     <article className="space-y-4">
       <Link href="/" className="text-sm font-semibold text-accent hover:underline">
@@ -41,17 +51,21 @@ export function PosterDetail({ id }: PosterDetailProps) {
       </Link>
       <div className="overflow-hidden rounded-2xl border border-black/5 bg-white/85 shadow-card">
         <div className="relative aspect-[5/7] w-full">
-          <img
-            src={data.image_url ?? "https://picsum.photos/800/1120?grayscale"}
-            alt={`${data.title} poster`}
-            className="h-full w-full object-cover"
-          />
+          {isPdfPoster ? (
+            <iframe
+              src={imageUrl}
+              title={`${data.title} PDF poster`}
+              className="h-full w-full bg-white"
+            />
+          ) : (
+            <img src={imageUrl} alt={`${data.title} poster`} className="h-full w-full object-cover" />
+          )}
         </div>
         <div className="space-y-2 p-5">
           <h1 className="text-2xl font-extrabold tracking-tight text-ink">{data.title}</h1>
           <p className="text-ink/80">{formatDateTime(data.created_at)}</p>
           <p className="text-ink/75">{data.content}</p>
-          <p className="text-xs text-ink/60">User #{data.user_id}</p>
+          <p className="text-xs text-ink/60">Posted by @{userData?.username ?? "loading"}</p>
         </div>
       </div>
     </article>
