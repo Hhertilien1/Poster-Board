@@ -1,14 +1,13 @@
 # Poster Board v1 (Next.js + React Query + MSW)
 
-Mobile-first frontend that renders event posters in an infinite feed using cursor pagination.
+Frontend for browsing posts from the Flask backend.
 
 ## Stack
 - Next.js App Router + TypeScript
 - Tailwind CSS
-- TanStack React Query (`useInfiniteQuery`)
-- IntersectionObserver (sentinel-based infinite loading)
+- TanStack React Query (`useQuery`)
 - MSW for mocked API in development
-- `next/image` for poster images
+- native `<img>` rendering for backend-provided image URLs
 
 ## Run
 
@@ -28,24 +27,20 @@ npm run start
 
 ## API Contract
 
-- `GET /api/posters?limit=<number>&cursor=<opaque|null>`
-  - response: `{ items: Poster[], nextCursor: string | null }`
-- `GET /api/posters/:id`
-  - response: `Poster`
+- `GET /posts`
+  - response: `Post[]`
+- `GET /posts/:id`
+  - response: `Post`
 
-`Poster` shape:
+`Post` shape:
 ```ts
 {
-  id: string;
+  id: number;
   title: string;
-  startTime: string; // ISO
-  location: string;
-  image: {
-    thumbUrl: string;
-    mediumUrl: string;
-    width: number;
-    height: number;
-  };
+  content: string;
+  image_url: string | null;
+  user_id: number;
+  created_at: string | null; // ISO
 }
 ```
 
@@ -60,7 +55,7 @@ NEXT_PUBLIC_API_BASE_URL=http://localhost:5000
 NEXT_PUBLIC_ENABLE_MSW=false
 ```
 3. Keep same endpoints/contract:
-- `GET /api/posters`
-- `GET /api/posters/:id`
+- `GET /posts`
+- `GET /posts/:id`
 
 Frontend components do not call `fetch` directly; they use the repository layer in `src/lib/api/`.

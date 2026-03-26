@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { posterRepository } from "@/lib/api/posterRepository";
 import { PosterCard } from "@/components/PosterCard";
 import { PosterCardSkeleton } from "@/components/PosterCardSkeleton";
@@ -9,51 +8,22 @@ import { PosterCardSkeleton } from "@/components/PosterCardSkeleton";
 const PAGE_SIZE = 12;
 
 export function PosterFeed() {
-  const sentinelRef = useRef<HTMLDivElement | null>(null);
-
   const {
     data,
     error,
     isError,
     isPending,
-    hasNextPage,
-    fetchNextPage,
-    isFetchingNextPage,
     refetch
-  } = useInfiniteQuery({
+  } = useQuery({
     queryKey: ["posters", PAGE_SIZE],
-    initialPageParam: null as string | null,
-    queryFn: ({ pageParam }) =>
+    queryFn: () =>
       posterRepository.listPosters({
-        cursor: pageParam,
         limit: PAGE_SIZE
       }),
-    getNextPageParam: (lastPage) => lastPage.nextCursor,
     staleTime: 60 * 1000
   });
 
-  useEffect(() => {
-    const sentinel = sentinelRef.current;
-    if (!sentinel) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const [entry] = entries;
-        if (entry?.isIntersecting && hasNextPage && !isFetchingNextPage) {
-          fetchNextPage();
-        }
-      },
-      { root: null, rootMargin: "600px" }
-    );
-
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
-
-  const posters = useMemo(
-    () => data?.pages.flatMap((page) => page.items) ?? [],
-    [data?.pages]
-  );
+  const posters = data ?? [];
 
   if (isPending) {
     return (
@@ -82,21 +52,10 @@ export function PosterFeed() {
   }
 
   return (
-    <>
-      <section className="grid grid-cols-1 gap-4 md:grid-cols-2" aria-label="Poster feed">
-        {posters.map((poster, idx) => (
-          <PosterCard key={poster.id} poster={poster} priority={idx < 2} />
-        ))}
-
-        {isFetchingNextPage &&
-          Array.from({ length: 2 }).map((_, idx) => <PosterCardSkeleton key={`next-${idx}`} />)}
-      </section>
-
-      <div ref={sentinelRef} className="h-4" aria-hidden="true" />
-
-      {!hasNextPage && (
-        <p className="py-6 text-center text-sm font-medium text-ink/60">You reached the end.</p>
-      )}
-    </>
+    <section className="grid grid-cols-1 gap-4 md:grid-cols-2" aria-label="Poster feed">
+      {posters.map((poster, idx) => (
+        <PosterCard key={poster.id} poster={poster} priority={idx < 2} />
+      ))}
+    </section>
   );
 }

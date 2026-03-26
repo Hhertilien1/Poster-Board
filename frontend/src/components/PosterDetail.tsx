@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { posterRepository } from "@/lib/api/posterRepository";
@@ -42,19 +41,17 @@ export function PosterDetail({ id }: PosterDetailProps) {
       </Link>
       <div className="overflow-hidden rounded-2xl border border-black/5 bg-white/85 shadow-card">
         <div className="relative aspect-[5/7] w-full">
-          <Image
-            src={data.image.mediumUrl}
+          <img
+            src={data.image_url ?? "https://picsum.photos/800/1120?grayscale"}
             alt={`${data.title} poster`}
-            fill
-            priority
-            sizes="(max-width: 768px) 100vw, 768px"
-            className="object-cover"
+            className="h-full w-full object-cover"
           />
         </div>
         <div className="space-y-2 p-5">
           <h1 className="text-2xl font-extrabold tracking-tight text-ink">{data.title}</h1>
-          <p className="text-ink/80">{formatDateTime(data.startTime)}</p>
-          <p className="text-ink/75">{data.location}</p>
+          <p className="text-ink/80">{formatDateTime(data.created_at)}</p>
+          <p className="text-ink/75">{data.content}</p>
+          <p className="text-xs text-ink/60">User #{data.user_id}</p>
         </div>
       </div>
     </article>

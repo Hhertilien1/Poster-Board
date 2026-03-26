@@ -1,17 +1,8 @@
-export type Poster = {
-  id: string;
+export type Post = {
+  id: number;
   title: string;
-  startTime: string;
-  location: string;
-  image: {
-    thumbUrl: string;
-    mediumUrl: string;
-    width: number;
-    height: number;
-  };
-};
-
-export type PosterPage = {
-  items: Poster[];
-  nextCursor: string | null;
+  content: string;
+  image_url: string | null;
+  user_id: number;
+  created_at: string | null;
 };
