@@ -25,11 +25,13 @@ class Post(db.Model):
     )
 
     def to_dict(self):
+        timestamp = self.created_at.isoformat() if self.created_at else None
         return {
             "id": self.id,
             "title": self.title,
             "content": self.content,
             "image_url": self.image_url,
             "user_id": self.user_id,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "created_at": timestamp,
+            "uploaded_at": timestamp,
         }

@@ -65,6 +65,42 @@ export async function getUserById(id: number | string): Promise<UserWithPosts> {
   return response.json() as Promise<UserWithPosts>;
 }
 
+export async function getUserByUsername(username: string): Promise<User> {
+  const search = new URLSearchParams({ username });
+  const response = await fetch(buildUrl(`/users?${search.toString()}`));
+  if (!response.ok) {
+    throw new Error(`getUserByUsername failed with ${response.status}`);
+  }
+
+  return response.json() as Promise<User>;
+}
+
+export async function listUsers(): Promise<User[]> {
+  const response = await fetch(buildUrl("/users"));
+  if (!response.ok) {
+    throw new Error(`listUsers failed with ${response.status}`);
+  }
+
+  return response.json() as Promise<User[]>;
+}
+
+export async function searchUsers(query: string): Promise<UserWithPosts[]> {
+  const search = new URLSearchParams({ query });
+  const response = await fetch(buildUrl(`/users?${search.toString()}`));
+  if (response.ok) {
+    return response.json() as Promise<UserWithPosts[]>;
+  }
+
+  if (response.status !== 404) {
+    throw new Error(`searchUsers failed with ${response.status}`);
+  }
+
+  const users = await listUsers();
+  const matches = users.filter((user) => user.username.toLowerCase().includes(query.toLowerCase()));
+
+  return Promise.all(matches.map((user) => getUserById(user.id)));
+}
+
 export async function createUser(input: CreateUserInput): Promise<User> {
   const response = await fetch(buildUrl("/users"), {
     method: "POST",

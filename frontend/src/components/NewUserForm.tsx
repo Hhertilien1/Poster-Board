@@ -10,18 +10,22 @@ type PendingPosterDraft = {
   title: string;
   content: string;
   image_url: string;
+  username: string;
+  created_at: string;
 };
 
 const PENDING_POSTER_DRAFT_KEY = "pendingPosterDraft";
+const DRAFT_MAX_AGE_MS = 1000 * 60 * 30;
 
 export function NewUserForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const returnTo = searchParams.get("returnTo") || "/poster/new";
-  const missingUserId = searchParams.get("missingUserId");
+  const requestedUsername = searchParams.get("username") || "";
+  const requestedUsernameNormalized = requestedUsername.trim().toLowerCase();
 
-  const [username, setUsername] = useState("");
+  const [username, setUsername] = useState(requestedUsername);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   function readPendingDraft(): PendingPosterDraft | null {
@@ -32,11 +36,28 @@ export function NewUserForm() {
 
     try {
       const parsed = JSON.parse(raw) as PendingPosterDraft;
-      if (!parsed.title || !parsed.content || !parsed.image_url) {
+      if (!parsed.title || !parsed.content || !parsed.image_url || !parsed.username || !parsed.created_at) {
+        window.sessionStorage.removeItem(PENDING_POSTER_DRAFT_KEY);
         return null;
       }
+
+      const draftAge = Date.now() - new Date(parsed.created_at).getTime();
+      if (Number.isNaN(draftAge) || draftAge > DRAFT_MAX_AGE_MS) {
+        window.sessionStorage.removeItem(PENDING_POSTER_DRAFT_KEY);
+        return null;
+      }
+
+      if (
+        requestedUsernameNormalized &&
+        parsed.username.trim().toLowerCase() !== requestedUsernameNormalized
+      ) {
+        window.sessionStorage.removeItem(PENDING_POSTER_DRAFT_KEY);
+        return null;
+      }
+
       return parsed;
     } catch {
+      window.sessionStorage.removeItem(PENDING_POSTER_DRAFT_KEY);
       return null;
     }
   }
@@ -72,7 +93,7 @@ export function NewUserForm() {
       }
 
       const join = returnTo.includes("?") ? "&" : "?";
-      router.push(`${returnTo}${join}userId=${user.id}`);
+      router.push(`${returnTo}${join}username=${encodeURIComponent(user.username)}`);
     }
   });
 
@@ -82,6 +103,11 @@ export function NewUserForm() {
 
     if (!username.trim()) {
       setErrorMessage("Username is required.");
+      return;
+    }
+
+    if (username.trim().length > 50) {
+      setErrorMessage("Username must be 50 characters or less.");
       return;
     }
 
@@ -98,12 +124,7 @@ export function NewUserForm() {
         <header className="mb-4 space-y-1">
           <p className="text-xs uppercase tracking-[0.2em] text-ink/60">New User</p>
           <h1 className="text-2xl font-extrabold tracking-tight text-ink">Create a User</h1>
-          <p className="text-sm text-ink/70">
-            This user will be created with the existing <code>POST /users</code> endpoint.
-          </p>
-          {missingUserId && (
-            <p className="text-xs text-ink/60">User ID {missingUserId} was not found.</p>
-          )}
+          <p className="text-sm text-ink/70">Create a user profile before publishing posters.</p>
         </header>
 
         <form onSubmit={onSubmit} className="space-y-4">

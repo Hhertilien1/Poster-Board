@@ -2,7 +2,41 @@ import { http, HttpResponse } from "msw";
 import { MOCK_POSTERS } from "@/mocks/data/posters";
 import { MOCK_USERS } from "@/mocks/data/users";
 
+function getNextId(items: Array<{ id: number }>) {
+  const maxId = items.reduce((currentMax, item) => Math.max(currentMax, item.id), 0);
+  return maxId + 1;
+}
+
 export const handlers = [
+  http.get("/users", ({ request }) => {
+    const url = new URL(request.url);
+    const username = url.searchParams.get("username")?.trim().toLowerCase();
+    const query = url.searchParams.get("query")?.trim().toLowerCase();
+
+    if (username) {
+      const user = MOCK_USERS.find((item) => item.username.toLowerCase() === username);
+      if (!user) {
+        return HttpResponse.json({ message: "User not found" }, { status: 404 });
+      }
+
+      return HttpResponse.json(user);
+    }
+
+    if (query) {
+      const matches = MOCK_USERS.filter((item) => item.username.toLowerCase().includes(query));
+      return HttpResponse.json(
+        matches.map((user) => ({
+          id: user.id,
+          username: user.username,
+          created_at: user.created_at,
+          posts: MOCK_POSTERS.filter((post) => post.user_id === user.id)
+        }))
+      );
+    }
+
+    return HttpResponse.json(MOCK_USERS);
+  }),
+
   http.get("/posts", () => {
     return HttpResponse.json(MOCK_POSTERS);
   }),
@@ -19,14 +53,15 @@ export const handlers = [
       return HttpResponse.json({ message: "Missing required fields" }, { status: 400 });
     }
 
-    const nextId = (MOCK_POSTERS.at(-1)?.id ?? 0) + 1;
+    const nextId = getNextId(MOCK_POSTERS);
     const newPost = {
       id: nextId,
       title: body.title,
       content: body.content,
       image_url: body.image_url,
       user_id: body.user_id,
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      uploaded_at: new Date().toISOString()
     };
 
     MOCK_POSTERS.unshift(newPost);
@@ -58,6 +93,7 @@ export const handlers = [
     return HttpResponse.json({
       id: user.id,
       username: user.username,
+      created_at: user.created_at,
       posts
     });
   }),
@@ -71,10 +107,11 @@ export const handlers = [
       return HttpResponse.json({ message: "Username is required" }, { status: 400 });
     }
 
-    const nextId = (MOCK_USERS.at(-1)?.id ?? 0) + 1;
+    const nextId = getNextId(MOCK_USERS);
     const user = {
       id: nextId,
-      username: body.username.trim()
+      username: body.username.trim(),
+      created_at: new Date().toISOString()
     };
 
     MOCK_USERS.push(user);

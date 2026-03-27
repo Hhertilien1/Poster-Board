@@ -9,15 +9,23 @@ import { posterRepository } from "@/lib/api/posterRepository";
 type FormState = {
   title: string;
   content: string;
-  userId: string;
+  username: string;
 };
 
 const DEFAULT_STATE: FormState = {
   title: "",
   content: "",
-  userId: "1"
+  username: ""
 };
 const PENDING_POSTER_DRAFT_KEY = "pendingPosterDraft";
+
+type PendingPosterDraft = {
+  title: string;
+  content: string;
+  image_url: string;
+  username: string;
+  created_at: string;
+};
 
 function isSupportedPosterFile(file: File) {
   const fileName = file.name.toLowerCase();
@@ -51,40 +59,45 @@ export function NewPosterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
-  const initialUserId = searchParams.get("userId") ?? "1";
+  const initialUsername = searchParams.get("username") ?? "";
   const [form, setForm] = useState<FormState>(() => ({
     ...DEFAULT_STATE,
-    userId: initialUserId
+    username: initialUsername
   }));
   const [posterFile, setPosterFile] = useState<File | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const createMutation = useMutation({
     mutationFn: async () => {
       if (!posterFile || !isSupportedPosterFile(posterFile)) {
-        throw new Error("A poster file is required (PDF, PNG, or JPEG).");
+        throw new Error("A poster file is required (PNG, JPEG, or PDF).");
       }
 
       const posterDataUrl = await fileToDataUrl(posterFile);
+      const user = await posterRepository.getUserByUsername(form.username.trim());
 
       return posterRepository.createPoster({
         title: form.title.trim(),
         content: form.content.trim(),
         image_url: posterDataUrl,
-        user_id: Number(form.userId)
+        user_id: user.id
       });
     },
     onSuccess: (post) => {
       queryClient.invalidateQueries({ queryKey: ["posters"] });
       router.push(`/poster/${post.id}`);
+    },
+    onSettled: () => {
+      setIsSubmitting(false);
     }
   });
 
   function resetForm() {
     setForm({
       ...DEFAULT_STATE,
-      userId: initialUserId
+      username: initialUsername
     });
     setPosterFile(null);
     setErrorMessage(null);
@@ -101,7 +114,7 @@ export function NewPosterForm() {
 
     if (!isSupportedPosterFile(file)) {
       setPosterFile(null);
-      setErrorMessage("Poster upload must be a PDF, PNG, or JPEG file.");
+      setErrorMessage("Poster upload must be a PNG, JPEG, or PDF file.");
       return;
     }
 
@@ -111,6 +124,11 @@ export function NewPosterForm() {
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (isSubmitting || createMutation.isPending) {
+      return;
+    }
+
     setErrorMessage(null);
 
     if (!form.title.trim()) {
@@ -124,18 +142,20 @@ export function NewPosterForm() {
     }
 
     if (!posterFile || !isSupportedPosterFile(posterFile)) {
-      setErrorMessage("Poster upload is required and must be a PDF, PNG, or JPEG file.");
+      setErrorMessage("Poster upload is required and must be a PNG, JPEG, or PDF file.");
       return;
     }
 
-    const userId = Number(form.userId);
-    if (!Number.isInteger(userId) || userId <= 0) {
-      setErrorMessage("User ID must be a positive integer.");
+    const username = form.username.trim();
+    if (!username) {
+      setErrorMessage("Username is required.");
       return;
     }
+
+    setIsSubmitting(true);
 
     try {
-      await posterRepository.getUserById(userId);
+      await posterRepository.getUserByUsername(username);
     } catch (error) {
       const message = (error as Error)?.message ?? "";
       if (message.includes("404")) {
@@ -144,20 +164,25 @@ export function NewPosterForm() {
           const draft = {
             title: form.title.trim(),
             content: form.content.trim(),
-            image_url: posterDataUrl
-          };
+            image_url: posterDataUrl,
+            username,
+            created_at: new Date().toISOString()
+          } satisfies PendingPosterDraft;
           window.sessionStorage.setItem(PENDING_POSTER_DRAFT_KEY, JSON.stringify(draft));
         } catch {
           setErrorMessage("Could not prepare poster draft for user creation flow.");
+          setIsSubmitting(false);
           return;
         }
 
         const returnTo = encodeURIComponent("/poster/new");
-        router.push(`/user/new?returnTo=${returnTo}&missingUserId=${userId}`);
+        const usernameParam = encodeURIComponent(username);
+        router.push(`/user/new?returnTo=${returnTo}&username=${usernameParam}`);
         return;
       }
 
-      setErrorMessage("Could not validate user ID. Please try again.");
+      setErrorMessage("Could not validate username. Please try again.");
+      setIsSubmitting(false);
       return;
     }
 
@@ -176,7 +201,7 @@ export function NewPosterForm() {
           <p className="text-xs uppercase tracking-[0.2em] text-ink/60">New Poster</p>
           <h1 className="text-2xl font-extrabold tracking-tight text-ink">Create a Post</h1>
           <p className="text-sm text-ink/70">
-            Upload a poster file (PDF, PNG, or JPEG) and details for your event.
+            Upload a poster file (PNG, JPEG, or PDF) and details for your event.
           </p>
         </header>
 
@@ -215,23 +240,22 @@ export function NewPosterForm() {
               required
             />
             <p className="text-xs text-ink/60">
-              {posterFile ? `Selected: ${posterFile.name}` : "Poster upload is required (PDF, PNG, or JPEG)."}
+              {posterFile ? `Selected: ${posterFile.name}` : "Poster upload is required (PNG, JPEG, or PDF)."}
             </p>
           </label>
 
           <label className="block space-y-1">
-            <span className="text-sm font-semibold text-ink">User ID</span>
+            <span className="text-sm font-semibold text-ink">Username</span>
             <input
-              value={form.userId}
-              onChange={(e) => setForm((prev) => ({ ...prev, userId: e.target.value }))}
+              value={form.username}
+              onChange={(e) => setForm((prev) => ({ ...prev, username: e.target.value }))}
               className="w-full rounded-lg border border-black/10 bg-white px-3 py-2 text-sm text-ink outline-none focus-visible:ring-2 focus-visible:ring-accent"
-              type="number"
-              min={1}
-              step={1}
+              type="text"
+              placeholder="existing_username"
               required
             />
             <p className="text-xs text-ink/60">
-              User must exist. Missing users will be redirected to user creation.
+              Username must exist. Missing users will be redirected to user creation.
             </p>
           </label>
 
@@ -244,10 +268,10 @@ export function NewPosterForm() {
           <div className="flex items-center gap-3">
             <button
               type="submit"
-              disabled={createMutation.isPending}
+              disabled={isSubmitting || createMutation.isPending}
               className="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-70"
             >
-              {createMutation.isPending ? "Creating..." : "Create Poster"}
+              {isSubmitting || createMutation.isPending ? "Creating..." : "Create Poster"}
             </button>
             <button
               type="button"

@@ -1,5 +1,7 @@
 from flask import Blueprint, jsonify, request
+from datetime import datetime
 from app.fake_data import users, posts
+from app.services.image_processing import normalize_image_data_url
 
 fake_bp = Blueprint("fake", __name__)
 
@@ -29,20 +31,67 @@ def get_user(user_id):
     return jsonify({
         "id": user["id"],
         "username": user["username"],
+        "created_at": user.get("created_at"),
         "posts": user_posts
     })
+
+
+# LOOK UP USERS (optionally by username)
+@fake_bp.route("/users", methods=["GET"])
+def get_users():
+    username = (request.args.get("username") or "").strip()
+    query = (request.args.get("query") or "").strip()
+
+    if username:
+        match = next((u for u in users if u["username"].lower() == username.lower()), None)
+        if not match:
+            return jsonify({"error": "User not found"}), 404
+        return jsonify(match), 200
+
+    if query:
+        matches = [u for u in users if query.lower() in u["username"].lower()]
+        results = [
+            {
+                "id": user["id"],
+                "username": user["username"],
+                "created_at": user.get("created_at"),
+                "posts": [post for post in posts if post["user_id"] == user["id"]],
+            }
+            for user in matches
+        ]
+        return jsonify(results), 200
+
+    return jsonify(users), 200
 
 # CREATE post (fake, does not persist across service restarts)
 @fake_bp.route("/posts", methods=["POST"])
 def create_post():
     data = request.get_json() or {}
+    user_id = data.get("user_id")
+
+    if not isinstance(user_id, int):
+        return jsonify({"error": "user_id must be an integer"}), 400
+
+    user = next((u for u in users if u["id"] == user_id), None)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    image_url = data.get("image_url")
+    try:
+        normalized_image_url = normalize_image_data_url(image_url)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+    created_at = datetime.utcnow().isoformat()
 
     new_post = {
         "id": len(posts) + 1,
         "title": data.get("title"),
         "content": data.get("content"),
-        "image_url": data.get("image_url"),
-        "user_id": data.get("user_id")
+        "image_url": normalized_image_url,
+        "user_id": user_id,
+        "created_at": created_at,
+        "uploaded_at": created_at,
     }
 
     posts.append(new_post)
@@ -66,10 +115,19 @@ def delete_post(post_id):
 @fake_bp.route("/users", methods=["POST"])
 def create_user():
     data = request.get_json() or {}
+    username = (data.get("username") or "").strip()
+
+    if not username:
+        return jsonify({"error": "Username is required"}), 400
+
+    existing = next((u for u in users if u["username"].lower() == username.lower()), None)
+    if existing:
+        return jsonify({"error": "Username already exists"}), 409
 
     new_user = {
         "id": len(users) + 1,
-        "username": data.get("username")
+        "username": username,
+        "created_at": datetime.utcnow().isoformat(),
     }
 
     users.append(new_user)

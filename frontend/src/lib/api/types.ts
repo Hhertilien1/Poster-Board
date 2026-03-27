@@ -5,6 +5,7 @@ export type Post = {
   image_url: string | null;
   user_id: number;
   created_at: string | null;
+  uploaded_at?: string | null;
 };
 
 export type CreatePostInput = {
@@ -17,6 +18,7 @@ export type CreatePostInput = {
 export type UserWithPosts = {
   id: number;
   username: string;
+  created_at?: string | null;
   posts: Post[];
 };
 

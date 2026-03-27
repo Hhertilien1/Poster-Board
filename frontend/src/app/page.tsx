@@ -1,4 +1,5 @@
 import { PosterFeed } from "@/components/PosterFeed";
+import { UserSearchPanel } from "@/components/UserSearchPanel";
 import Link from "next/link";
 
 export default function HomePage() {
@@ -18,6 +19,7 @@ export default function HomePage() {
           Upload New Poster
         </Link>
       </header>
+      <UserSearchPanel />
       <PosterFeed />
     </main>
   );

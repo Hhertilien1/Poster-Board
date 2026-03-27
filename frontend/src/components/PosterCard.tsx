@@ -14,6 +14,7 @@ type PosterCardProps = {
 export function PosterCard({ poster, priority = false }: PosterCardProps) {
   void priority;
   const imageUrl = poster.image_url ?? "https://picsum.photos/800/1120?grayscale";
+  const uploadedAt = poster.uploaded_at ?? poster.created_at;
   const isPdfPoster =
     imageUrl.startsWith("data:application/pdf") || imageUrl.toLowerCase().endsWith(".pdf");
   const { data: userData } = useQuery({
@@ -45,7 +46,7 @@ export function PosterCard({ poster, priority = false }: PosterCardProps) {
       </div>
       <div className="space-y-1 p-4">
         <h2 className="line-clamp-2 text-base font-bold text-ink">{poster.title}</h2>
-        <p className="text-sm text-ink/75">{formatDateTime(poster.created_at)}</p>
+        <p className="text-sm text-ink/75">Uploaded {formatDateTime(uploadedAt)}</p>
         <p className="text-xs text-ink/60">Posted by @{userData?.username ?? "loading"}</p>
         <p className="line-clamp-2 text-sm text-ink/70">{poster.content}</p>
       </div>

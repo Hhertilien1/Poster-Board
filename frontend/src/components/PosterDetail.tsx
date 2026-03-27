@@ -41,6 +41,7 @@ export function PosterDetail({ id }: PosterDetailProps) {
   }
 
   const imageUrl = data.image_url ?? "https://picsum.photos/800/1120?grayscale";
+  const uploadedAt = data.uploaded_at ?? data.created_at;
   const isPdfPoster =
     imageUrl.startsWith("data:application/pdf") || imageUrl.toLowerCase().endsWith(".pdf");
 
@@ -63,7 +64,7 @@ export function PosterDetail({ id }: PosterDetailProps) {
         </div>
         <div className="space-y-2 p-5">
           <h1 className="text-2xl font-extrabold tracking-tight text-ink">{data.title}</h1>
-          <p className="text-ink/80">{formatDateTime(data.created_at)}</p>
+          <p className="text-ink/80">Uploaded {formatDateTime(uploadedAt)}</p>
           <p className="text-ink/75">{data.content}</p>
           <p className="text-xs text-ink/60">Posted by @{userData?.username ?? "loading"}</p>
         </div>

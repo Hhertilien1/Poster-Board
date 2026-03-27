@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from app import db
 from app.models.post import Post
 from app.models.user import User
+from app.services.image_processing import normalize_image_data_url
 
 post_bp = Blueprint("posts", __name__)
 
@@ -9,8 +10,16 @@ post_bp = Blueprint("posts", __name__)
 @post_bp.route("/users", methods=["POST"])
 def create_user():
     data = request.get_json() or {}
+    username = (data.get("username") or "").strip()
 
-    user = User(username=data.get("username"))
+    if not username:
+        return jsonify({"error": "Username is required"}), 400
+
+    existing = User.query.filter(db.func.lower(User.username) == username.lower()).first()
+    if existing:
+        return jsonify({"error": "Username already exists"}), 409
+
+    user = User(username=username)
 
     db.session.add(user)
     db.session.commit()
@@ -21,12 +30,26 @@ def create_user():
 @post_bp.route("/posts", methods=["POST"])
 def create_post():
     data = request.get_json() or {}
+    user_id = data.get("user_id")
+
+    if not isinstance(user_id, int):
+        return jsonify({"error": "user_id must be an integer"}), 400
+
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    image_url = data.get("image_url")
+    try:
+        normalized_image_url = normalize_image_data_url(image_url)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
 
     post = Post(
         title=data.get("title"),
         content=data.get("content"),
-        image_url=data.get("image_url"),
-        user_id=data.get("user_id")
+        image_url=normalized_image_url,
+        user_id=user_id
     )
 
     db.session.add(post)
@@ -47,6 +70,7 @@ def get_posts():
             "image_url": p.image_url,
             "user_id": p.user_id,
             "created_at": p.created_at.isoformat() if p.created_at else None,
+            "uploaded_at": p.created_at.isoformat() if p.created_at else None,
         }
         for p in posts
     ]
@@ -80,5 +104,39 @@ def get_user(user_id):
     return jsonify({
         "id": user.id,
         "username": user.username,
+        "created_at": user.created_at.isoformat() if user.created_at else None,
         "posts": posts_data
     }), 200
+
+
+# LOOK UP USERS (optionally by username)
+@post_bp.route("/users", methods=["GET"])
+def get_users():
+    username = (request.args.get("username") or "").strip()
+    query = (request.args.get("query") or "").strip()
+
+    if username:
+        user = User.query.filter(db.func.lower(User.username) == username.lower()).first()
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+        return jsonify(user.to_dict()), 200
+
+    if query:
+        users = (
+            User.query
+            .filter(User.username.ilike(f"%{query}%"))
+            .order_by(User.username.asc())
+            .all()
+        )
+        return jsonify([
+            {
+                "id": user.id,
+                "username": user.username,
+                "created_at": user.created_at.isoformat() if user.created_at else None,
+                "posts": [post.to_dict() for post in user.posts],
+            }
+            for user in users
+        ]), 200
+
+    users = User.query.all()
+    return jsonify([user.to_dict() for user in users]), 200
