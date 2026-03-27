@@ -1,5 +1,6 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
+from flask_cors import CORS
 from dotenv import load_dotenv
 import os
 
@@ -11,6 +12,8 @@ def create_app():
     """Create and configure the Flask application instance."""
     app = Flask(__name__)
 
+    CORS(app)
+
     database_url = os.getenv("DATABASE_URL")
     if not database_url:
         raise RuntimeError("DATABASE_URL environment variable is required")
@@ -20,17 +23,9 @@ def create_app():
 
     db.init_app(app)
 
-    # Import models to ensure tables are registered with SQLAlchemy metadata.
     from app.models.user import User
     from app.models.post import Post
 
-    # Register blueprints for endpoint groups.
-    # Use postgres-backed endpoints in production.
-    #from app.routes.post_routes import post_bp
-    #app.register_blueprint(post_bp)
-
-    #STATIC ENDPOINTS FOR TESTING
-    # Fake in-memory routes can be used for local development or fallback.
     from app.routes.fake_routes import fake_bp
     app.register_blueprint(fake_bp)
 

@@ -1,34 +1,8 @@
-version: "3.9"
-
 services:
-  db:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: posterboard
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-    ports:
-      - "5432:5432"
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-
-  backend:
-    build: ./backend
-    ports:
-      - "5001:5000"
-    environment:
-      - DATABASE_URL=postgresql://postgres:password@db:5432/posterboard
-    depends_on:
-      - db
-
   frontend:
     build: ./frontend
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:5001
-    depends_on:
-      - backend
-
-volumes:
-  pgdata:
+      NEXT_PUBLIC_ENABLE_MSW: "true"
+      NEXT_PUBLIC_API_BASE_URL: ""
