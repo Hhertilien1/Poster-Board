@@ -26,9 +26,12 @@ def create_app():
     from app.models.user import User
     from app.models.post import Post
 
-    from app.routes.fake_routes import fake_bp
-    app.register_blueprint(fake_bp)
-
+    #from app.routes.fake_routes import fake_bp
+    #app.register_blueprint(fake_bp)
+    
+    from app.routes.post_routes import post_bp
+    app.register_blueprint(post_bp)
+    
     @app.route("/")
     def home():
         return "Database Connected"
