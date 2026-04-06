@@ -1,0 +1,67 @@
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - id: auth
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - uses: google-github-actions/setup-gcloud@v1
+
+      - run: gcloud auth configure-docker
+
+      - name: Build and push backend
+        run: |
+          docker build --platform linux/amd64 -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/backend ./backend
+          docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/backend
+
+      - name: Deploy backend
+        run: |
+          gcloud run deploy backend \
+            --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/backend \
+            --platform managed \
+            --region us-east1 \
+            --allow-unauthenticated \
+            --port 8080 \
+            --add-cloudsql-instances ${{ secrets.GCP_PROJECT_ID }}:us-east1:poster-board-db \
+            --set-env-vars DATABASE_URL="${{ secrets.DATABASE_URL }}"
+
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - id: auth
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - uses: google-github-actions/setup-gcloud@v1
+
+      - run: gcloud auth configure-docker
+
+      - name: Build and push frontend
+        run: |
+          docker build --platform linux/amd64 \
+            --build-arg NEXT_PUBLIC_API_BASE_URL=https://backend-519567766057.us-east1.run.app \
+            -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/frontend ./frontend
+          docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/frontend
+
+      - name: Deploy frontend
+        run: |
+          gcloud run deploy frontend \
+            --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/frontend \
+            --platform managed \
+            --region us-east1 \
+            --allow-unauthenticated \
+            --port 3000
