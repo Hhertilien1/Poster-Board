@@ -4,6 +4,7 @@ export type Post = {
   content: string;
   image_url: string | null;
   user_id: number;
+  view_count: number;
   created_at: string | null;
   uploaded_at?: string | null;
 };

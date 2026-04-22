@@ -38,6 +38,9 @@ export const handlers = [
   }),
 
   http.get("/posts", () => {
+    MOCK_POSTERS.forEach((post) => {
+      post.view_count += 1;
+    });
     return HttpResponse.json(MOCK_POSTERS);
   }),
 
@@ -60,6 +63,7 @@ export const handlers = [
       content: body.content,
       image_url: body.image_url,
       user_id: body.user_id,
+      view_count: 0,
       created_at: new Date().toISOString(),
       uploaded_at: new Date().toISOString()
     };
