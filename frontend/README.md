@@ -48,9 +48,12 @@ npm run start
   content: string;
   image_url: string | null;
   user_id: number;
+  view_count: number;
   created_at: string | null; // ISO
 }
 ```
+
+`view_count` is backend-managed and should be incremented whenever `GET /posts` is called.
 
 ## UI Routes
 

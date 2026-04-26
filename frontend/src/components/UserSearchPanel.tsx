@@ -64,7 +64,7 @@ export function UserSearchPanel() {
                 <div>
                   <h3 className="text-lg font-bold text-ink">@{user.username}</h3>
                   <p className="text-sm text-ink/65">
-                    Joined {formatDateTime(user.created_at)} · {user.posts.length} post{user.posts.length === 1 ? "" : "s"}
+                    Joined {formatDateTime(user.created_at)} - {user.posts.length} post{user.posts.length === 1 ? "" : "s"}
                   </p>
                 </div>
                 <Link
@@ -79,6 +79,7 @@ export function UserSearchPanel() {
                 <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
                   {user.posts.map((post) => {
                     const uploadedAt = post.uploaded_at ?? post.created_at;
+                    const viewCount = post.view_count ?? 0;
 
                     return (
                       <Link
@@ -87,7 +88,9 @@ export function UserSearchPanel() {
                         className="block rounded-lg border border-black/8 bg-white/80 p-3 transition hover:-translate-y-0.5 hover:shadow-sm focus-visible:ring-2 focus-visible:ring-accent"
                       >
                         <p className="text-sm font-bold text-ink">{post.title}</p>
-                        <p className="mt-1 text-xs text-ink/60">Uploaded {formatDateTime(uploadedAt)}</p>
+                        <p className="mt-1 text-xs text-ink/60">
+                          Uploaded {formatDateTime(uploadedAt)} - {viewCount} views
+                        </p>
                         <p className="mt-2 line-clamp-2 text-sm text-ink/70">{post.content}</p>
                       </Link>
                     );

@@ -33,6 +33,7 @@ function posterFor(index: number): Post {
     content,
     image_url: `https://picsum.photos/id/${imgId}/800/1120`,
     user_id: (index % 5) + 1,
+    view_count: (index * 7) % 250,
     created_at
   };
 }

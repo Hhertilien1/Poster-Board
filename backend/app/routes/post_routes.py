@@ -60,22 +60,15 @@ def create_post():
 # GET ALL POSTS
 @post_bp.route("/posts", methods=["GET"])
 def get_posts():
+    # Atomically increment view_count for all posts
+    db.session.query(Post).update(
+        {Post.view_count: Post.view_count + 1},
+        synchronize_session=False
+    )
+    db.session.commit()
+    
     posts = Post.query.all()
-
-    results = [
-        {
-            "id": p.id,
-            "title": p.title,
-            "content": p.content,
-            "image_url": p.image_url,
-            "user_id": p.user_id,
-            "created_at": p.created_at.isoformat() if p.created_at else None,
-            "uploaded_at": p.created_at.isoformat() if p.created_at else None,
-        }
-        for p in posts
-    ]
-
-    return jsonify(results), 200
+    return jsonify([post.to_dict() for post in posts]), 200
 
 # GET A SINGLE POST
 @post_bp.route("/posts/<int:post_id>", methods=["GET"])

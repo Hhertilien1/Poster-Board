@@ -18,6 +18,7 @@ class Post(db.Model):
         db.ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False
     )
+    view_count = db.Column(db.Integer, nullable=False, default=0)
 
     __table_args__ = (
         db.Index("idx_created_at", "created_at"),
@@ -32,6 +33,7 @@ class Post(db.Model):
             "content": self.content,
             "image_url": self.image_url,
             "user_id": self.user_id,
+            "view_count": self.view_count,
             "created_at": timestamp,
             "uploaded_at": timestamp,
         }
